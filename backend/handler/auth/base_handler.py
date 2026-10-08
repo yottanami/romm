@@ -105,6 +105,14 @@ def _invite_token_spent() -> HTTPException:
     )
 
 
+def _oidc_role_granted(setting: str | None, roles: list[str]) -> bool:
+    """`OIDC_ROLE_*` hold a comma-separated list of group names; any one of
+    them in the roles claim grants the role."""
+    if not setting:
+        return False
+    return any(group.strip() in roles for group in setting.split(",") if group.strip())
+
+
 # bcrypt only reads the first 72 bytes and raises on longer secrets.
 BCRYPT_MAX_SECRET_BYTES = 72
 
@@ -663,11 +671,12 @@ class OpenIDHandler:
         claims_provided = OIDC_CLAIM_ROLES and OIDC_CLAIM_ROLES in userinfo
         if claims_provided:
             roles = userinfo[OIDC_CLAIM_ROLES] or []
-            if OIDC_ROLE_ADMIN and OIDC_ROLE_ADMIN in roles:
+            if _oidc_role_granted(OIDC_ROLE_ADMIN, roles):
                 role = Role.ADMIN
-            elif (OIDC_ROLE_EDITOR and OIDC_ROLE_EDITOR in roles) or (
-                OIDC_ROLE_VIEWER
-                and (OIDC_ROLE_VIEWER in roles or OIDC_ROLE_VIEWER == "*")
+            elif (
+                _oidc_role_granted(OIDC_ROLE_EDITOR, roles)
+                or _oidc_role_granted(OIDC_ROLE_VIEWER, roles)
+                or OIDC_ROLE_VIEWER == "*"
             ):
                 role = Role.USER
             else:

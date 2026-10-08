@@ -177,8 +177,23 @@ async def test_oidc_valid_token_decoding(
         [{}, ["viewer"], Role.USER],
         # OIDC viewer role fallback.
         [{"OIDC_ROLE_VIEWER": "*"}, [], Role.USER],
+        # Comma-separated lists of groups.
+        [
+            {"OIDC_ROLE_ADMIN": "romm-admin,platform-admins"},
+            ["platform-admins"],
+            Role.ADMIN,
+        ],
+        [{"OIDC_ROLE_VIEWER": "viewer, platform-users"}, ["platform-users"], Role.USER],
     ],
-    ids=["no-mapping", "admin-role", "editor-role", "viewer-role", "viewer-fallback"],
+    ids=[
+        "no-mapping",
+        "admin-role",
+        "editor-role",
+        "viewer-role",
+        "viewer-fallback",
+        "admin-role-list",
+        "viewer-role-list",
+    ],
 )
 async def test_oidc_valid_add_user(
     mocker,
